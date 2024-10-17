@@ -94,6 +94,6 @@ app.get('/picus/test', (req, res) => {
   res.json(return_json);
 })
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
