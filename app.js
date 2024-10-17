@@ -3,10 +3,15 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand, GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
 
 
-const dynamoDBClient = new DynamoDBClient({ region: 'eu-central-1' });
+const dynamoDBClient = new DynamoDBClient({
+  region: 'eu-central-1',
+});
+
 const dynamoDB = DynamoDBDocumentClient.from(dynamoDBClient);
+
 
 const app = express();
 const PORT = 3000;
@@ -23,6 +28,7 @@ app.get('/picus/list', async (req, res) => {
     const data = await dynamoDB.send(new ScanCommand(params));
     res.json(data.Items);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Could not fetch data' });
   }
 });
@@ -44,6 +50,7 @@ app.post('/picus/put', async (req, res) => {
     await dynamoDB.send(new PutCommand(params));
     res.json({ message: 'Item added successfully', id });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Could not add item' });
   }
 });
@@ -63,9 +70,11 @@ app.get('/picus/get/:key', async (req, res) => {
     if (data.Item) {
       res.json(data.Item);
     } else {
+      console.log('Item not found');
       res.status(404).json({ error: 'Item not found' });
     }
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Could not retrieve item' });
   }
 });
