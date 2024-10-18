@@ -4,7 +4,7 @@
 
 ## 1. AWS Hesabı Oluşturma
 
-Bu aşamada yeni bir hesap oluşturmadım; daha önce oluşturmuş olduğum hesabıma root kullanıcı olarak erişim sağladım. Hesabımın ayarlarını kontrol ettim.
+Bu aşamada yeni bir hesap oluşturmadım; daha önce oluşturmuş olduğum hesabıma root kullanıcı olarak erişim sağladım ve daha sonraki islemler icin bu root hesabi icinde IAM kullanicilari olusturdum. 
 
 ## 2. DynamoDB Tablosunun Kurulumu
 
@@ -18,7 +18,7 @@ Bu aşamada yeni bir hesap oluşturmadım; daha önce oluşturmuş olduğum hesa
 
 ### Express Uygulamasının Kurulumu
 
-1. **Express Uygulamasını Başlattım**: Yeni bir Express.js uygulaması oluşturmak için öncelikle Node.js ve npm'nin sistemimde yüklü olduğundan emin oldum. Terminalde gerekli bağımlılıkları yüklemek için `npm install express body-parser aws-sdk` komutunu çalıştırdım. Bu işlem, uygulamamın çalışması için gerekli olan Express.js ve body-parser gibi kütüphaneleri yükledi. Ayrıca, DynamoDB ile bağlantı sağlamak için AWS SDK'sını (aws-sdk) da kurdum. Geliştirme aşamasında `nodemon` kullandım ve daha sonra `package.json` dosyasına bir dev script ekleyerek uygulamayı o şekilde çalıştırdım.
+1. **Express Uygulaması**: Bu asamada bir Express Node.js uygulamasi yapmaya karar verdim. Terminalde gerekli bağımlılıkları yüklemek için `npm install express body-parser aws-sdk` komutunu çalıştırdım. Bu işlem, uygulamamın çalışması için gerekli olan Express.js ve body-parser gibi kütüphaneleri yükledi. Ayrıca, DynamoDB ile bağlantı sağlamak için AWS SDK'sını (aws-sdk) da kurdum. Geliştirme aşamasında `nodemon` kullandım ve daha sonra `package.json` dosyasına bir dev script ekleyerek uygulamayı o şekilde çalıştırdım.
 
 ### API Endpoints
 
@@ -37,9 +37,16 @@ Bu uygulamada belirtilen endpointleri yazdım ve port 3000'de servis edilecek ş
 
 - **Bir Repo Oluşturdum**: Sürüm kontrolü ve ileriki aşamalarda kuracağım CI/CD süreci için Git kullandım. Uygulamayı kurduktan ve çalıştırdıktan sonra 'initial commit' mesajıyla ilk commit'imi attım ve GitHub'a publish ettim.
 
-## 4. Uygulamayı Docker ile Paketleme
+## 4. Uygulamayı Dockerize Etme
 
 - **Dockerfile Oluşturdum**: Express uygulamamı çalıştırmak için bir Dockerfile oluşturdum. Bu Dockerfile, uygulamamın bir Docker image'ına dönüştürülebilmesi için gerekli ayarları içeriyor. Node ortamının kurulması, port binding ve projenin ayağa kaldırılması için gerekli komutları içeriyor.
+FROM node:14  > Bu satır, Docker imajının temelini belirler. Node.js'in 14. sürümünü kullandığımızı gösteriyor; bu da uygulamanın bu Node sürümünde çalışacağı anlamına geliyor.
+WORKDIR /usr/src/app  > Çalışma dizinini ayarlıyoruz. Uygulama dosyalarının yer alacağı dizini `/usr/src/app` olarak belirliyoruz; bu, sonraki komutların bu dizin içinde çalışmasını sağlar.
+COPY package*.json ./  > `package.json` ve `package-lock.json` dosyalarını çalışma dizinine kopyalıyoruz. Bu dosyalar, uygulamanın bağımlılıklarını içeriyor ve bu nedenle bu adım önemli.
+RUN npm install  > Kopyalanan `package.json` dosyalarındaki bağımlılıkları yüklemek için `npm install` komutunu çalıştırıyoruz. Bu, uygulamanın düzgün çalışabilmesi için gereken tüm paketleri indirir.
+COPY . .  > Uygulamanın geri kalan dosyalarını (kodu, statik dosyaları, vb.) çalışma dizinine kopyalıyoruz. Böylece tüm uygulama dosyaları kapsayıcı içinde bulunmuş oluyor.
+EXPOSE 3000  > Uygulamanın dinleyeceği portu açıyoruz. Uygulama 3000 portu üzerinden erişilebilir olacak, bu sayede dış dünyadan gelen istekleri karşılayabiliriz.
+CMD [ "node", "app.js" ]  > Uygulama başlatma komutunu belirliyoruz. `node app.js` komutu, `app.js` dosyasını çalıştırarak uygulamanın başlatılmasını sağlıyor.
 
 ## 5. Uygulamayı AWS Üzerinde Dağıtma
 
@@ -66,17 +73,21 @@ Bu uygulamada belirtilen endpointleri yazdım ve port 3000'de servis edilecek ş
 
 ### IAM Rollerini ve Politika Ayarlarını Yapılandırma
 
-- Lambda fonksiyonunun DynamoDB tablosuna okuma/yazma işlemleri için tam erişim sağladığından emin olmak için AWS IAM rollerini ve politikalarını ayarladım. Bu aşamada, lambda fonksiyonuna execution role olarak DynamoDB izinlerini verdim. Ayrıca, lambda fonksiyonum gelen API Gateway trafiklerini ECS'e yönlendirecek şekilde Python kullanarak kodunu yazdım.
+- Lambda fonksiyonunun DynamoDB tablosuna okuma/yazma işlemleri için tam erişim sağladığından emin olmak için AWS IAM rollerini ve politikalarını ayarladım. Bu aşamada, lambda fonksiyonuna execution role olarak DynamoDB izinlerini verdim. Ayrıca, lambda fonksiyonum gelen API Gateway trafiklerini ECS'e yönlendirecek şekilde Python kodunu yazdım.
 
 ### API Gateway Kurulumu
 
-- **Endpointler Tanımlama**: Çalışan kayıtlarını yönetmek için bir API Gateway endpoint'i oluşturdum ve path parametrelerini ayarladım. Burada, hem ECS üzerinde çalışan Docker container'ım hem de Lambda fonksiyonundaki endpoint'imi tek bir API Gateway'e bağlayarak, tek bir domain üzerinden isteklerin dağıtılıp işlenmesini sağladım.
+- **Endpoint Tanımlama**: DynamoDb Tablomdaki Employee kayıtlarını yönetmek için bir API Gateway endpoint'i oluşturdum ve path parametrelerini ayarladım. Burada, hem ECS üzerinde çalışan Docker container'ım hem de Lambda fonksiyonundaki endpoint'imi tek bir API Gateway'e bağlayarak, tek bir domain üzerinden isteklerin dağıtılıp işlenmesini sağladım.
 
 ### Lambda Fonksiyonunu Yazma
 
 - **Endpoint**: `DELETE /picus/{key}` oluşturup işlevselliğini sağladım. Bu fonksiyon, sağlanan `key` temelinde DynamoDB tablosundaki belirli bir çalışan kaydını silmektedir. Ayrıca içeride iki GET ve bir POST metodu, gelen istekleri ECS'e yönlendirmektedir.
 
 ## Github Actions ile CI/CD Kurulumu
+
+Projenin .github/workflows dizinine ir YAML dosyası ekledim ve GitHub Actions ile AWS ECS üzerinde uygulamamı dağıtmak için CI/CD sürecimi otomatikleştirdim. Dosya, master dalında bir değişiklik olduğunda otomatik olarak tetiklenecek şekilde ayarlandı. env bölümünde, AWS ile ilgili kritik bilgileri ve ECR (Elastic Container Registry) için gizli değişkenleri tanımladım. Bu gizli değişkenler, güvenlik açısından GitHub'ın secrets sisteminden alınıyor, böylece şifrelerim kodumda görünmüyor. İş akışımda deploy adında bir görev oluşturdum. İlk olarak, kodumun kontrol edilmesi için checkout işlemi yapılıyor. Ardından, AWS kimlik bilgilerimi yapılandırmak için bir adım ekledim. Bu adımda, erişim anahtarı ve gizli anahtarı kullanarak AWS ile bağlantı kuruyorum. Sonrasında, Amazon ECR'ye giriş yapıyorum ve Docker imajımı oluşturup etiketleyip itiyorum.
+
+En son olarak, oluşturduğum imajı kullanarak ECS görev tanımını güncelliyorum ve güncellenmiş görev tanımını AWS ECS'ye dağıtıyorum. Böylece, uygulamam her güncelleme yapıldığında otomatik olarak AWS üzerinde güncelleniyor. Bu sayede süreçlerimi daha verimli bir şekilde yönetebiliyorum.
 
 ---
 
