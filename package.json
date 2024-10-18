@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.670.0",
+    "@aws-sdk/client-secrets-manager": "^3.674.0",
     "@aws-sdk/lib-dynamodb": "^3.670.0",
     "aws-cli": "^0.0.2",
     "body-parser": "^1.20.3",
