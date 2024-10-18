@@ -34,10 +34,10 @@ jobs:
             - name: Login to Amazon ECR
               id: login-ecr
               uses: aws-actions/amazon-ecr-login@v1
-              
+
             - name: Build, tag, and push image to Amazon ECR
               id: build-image
-              env:
+              env: 
                   ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
                   ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
                   IMAGE_TAG: latest
